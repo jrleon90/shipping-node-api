@@ -15,8 +15,17 @@
   "author": "jrleon90",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.6.1",
+    "body-parser": "^1.18.3",
+    "db-migrate": "^0.11.1",
+    "db-migrate-mongodb": "^1.4.0",
     "dotenv": "^6.0.0",
-    "express": "^4.16.3"
+    "express": "^4.16.3",
+    "lodash": "^4.17.10",
+    "migrate": "^1.5.0",
+    "mongoose": "^5.2.3",
+    "mongoose-auto-increment": "^5.0.1",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "nodemon": "^1.18.1"
