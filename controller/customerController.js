@@ -9,6 +9,20 @@ router.use(bodyParser.json());
 const Customer = require('../model/customer');
 const Order = require('../model/order');
 
+router.post('/', (req, res) => {
+    if(!req.body.customer_name || !req.body.customer_address || !req.body.customer_phone)
+        return res.status(500).json({'Message':'Information missing'});
+    let customer = new Customer({
+        customer_name: req.body.customer_name,
+        customer_address: req.body.customer_address,
+        customer_phone: req.body.customer_phone
+    });
+    Customer.create(customer, (err, customerData) => {
+        if(err) return res.status(500).json({'Error':err});
+        return res.status(200).json({'response': customerData});
+    })
+})
+
 router.get('/:parameter', (req,res) => {
     const parameter = req.params.parameter.toLowerCase();
     const type = req.query.type;
@@ -69,6 +83,7 @@ router.delete('/:id', (req, res) => {
     })
 })
 
+//Get all orders from a customer by giving the name or address
 router.get('/orders/:parameter', (req, res) => {
     const parameter = req.params.parameter;
     const type = req.query.type;
@@ -128,6 +143,7 @@ router.get('/orders/:parameter', (req, res) => {
     }
 })
 
+//Total ammount spent by a customer
 router.get('/spent/:parameter', (req, res) => {
     const parameter = req.params.parameter;
     const type = req.query.type;
@@ -135,10 +151,10 @@ router.get('/spent/:parameter', (req, res) => {
     let objectSpent = [];
 
     if(type == 'name'){
-        Customer.findOne({'customer_name': parameter}).exec((err, customerData) => {
+        Customer.find({'customer_name': parameter}).exec((err, customerData) => {
             if (err) return res.status(500).json({'Error': err});
             if (customerData != null && customerData.length > 0){
-                Order.find({'customer_id': customerData._id}).exec((err, orderData) => {
+                Order.find({'customer_id': customerData[0]._id}).exec((err, orderData) => {
                     if(err) return res.status(500).json({'Error': err});
                     if(orderData != null && customerData.length > 0){
                         let products = orderData.map((order) => {

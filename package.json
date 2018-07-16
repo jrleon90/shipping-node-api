@@ -4,7 +4,7 @@
   "description": "API made with Node.js to keep track of shipping data",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/mocha --exit"
   },
   "keywords": [
     "Node.js",
@@ -28,6 +28,9 @@
     "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "nodemon": "^1.18.1"
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0",
+    "nodemon": "^1.18.1",
+    "supertest": "^3.1.0"
   }
 }

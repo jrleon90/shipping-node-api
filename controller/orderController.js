@@ -16,68 +16,92 @@ router.post('/', (req,res) => {
     if (!req.body.customer_id || !req.body.products)
         return res.status(500).json({'Error': 'Information is missing'});
 
-    let order = new Order({
-        //customer_name: req.body.customer_name,
-        //customer_address: req.body.customer_address,
-        customer_id: req.body.customer_id,
-        products: req.body.products
-        });
-
-    order.products.forEach((element)=>{
-        let item_sale=element.item_quantity*element.item_price;
-        OrderHistory.update({item_name: element.item_name},
-                            {$inc:{item_quantity_sales: element.item_quantity,item_sales: item_sale}},
-                            {upsert:true},
-                            (err, data)=>{
-                                if(err) return res.status(500).json({'Error':err});
-                                console.log('insert data');
-                            })
+    Customer.find({'_id': req.body.customer_id}).exec((err, customerData) => {
+        if(err) return res.status(500).json({'Error': err});
+        if (customerData.length > 0){
+            let order = new Order({
+                //customer_name: req.body.customer_name,
+                //customer_address: req.body.customer_address,
+                customer_id: req.body.customer_id,
+                products: req.body.products
+                });
+        
+            order.products.forEach((element)=>{
+                let item_sale=element.item_quantity*element.item_price;
+                OrderHistory.update({item_name: element.item_name},
+                                    {$inc:{item_quantity_sales: element.item_quantity,item_sales: item_sale}},
+                                    {upsert:true},
+                                    (err, data)=>{
+                                        if(err) return res.status(500).json({'Error':err});
+                                    })
+            })
+        
+            Order.create(order, (err, orderInfo) =>{
+                if (err) return res.status(500).json({'Error':err});
+                return res.status(200).json({'response': order});
+            })
+        } else {
+            return res.status(404).json({'Message':'Customer Id not found'})
+        }   
     })
 
-    Order.create(order, (err, orderInfo) =>{
-        if (err) return res.status(500).json({'Error':err});
-        return res.status(200).json({'response': order});
-    })
 });
 
 //Get orders of one customer
 router.get('/customer/:parameter', (req,res) => {
     const parameter = req.params.parameter.toLowerCase();
     if(req.query.type=='name'){
-            Order.find({'customer_name': parameter})
-            .exec((err, data) => {
-                if (err) return res.status(500).json({'Error':err});
-                let responseProducts = [];
-                if(data.length > 0){
-                    data.forEach(element => {
-                        let itemsOrder = {
-                            order_id: element._id,
-                            products: element.products
-                        };
-                        responseProducts.push(itemsOrder);
-                    });
-                    return res.status(200).json({'Orders': responseProducts});
-            } else
-                    return res.status(404).json({'response': 'User not found'});
-            })
+            Customer.find({'customer_name':parameter})
+                .exec((err, customerData) => {
+                    if(err) return res.status(500).json({'Error': err});
+                    if(customerData != null && customerData.length > 0){
+                        Order.find({'customer_id': customerData[0]._id})
+                            .exec((err, data) => {
+                                if (err) return res.status(500).json({'Error':err});
+                                let responseProducts = [];
+                                if(data.length > 0){
+                                    data.forEach(element => {
+                                        let itemsOrder = {
+                                        order_id: element._id,
+                                        products: element.products
+                                        };
+                                    responseProducts.push(itemsOrder);
+                                    });
+                                return res.status(200).json({'Orders': responseProducts});
+                                } else
+                                    return res.status(404).json({'response': 'Customer not found'});
+                            })
+                    } else {
+                        return res.status(404).json({'Message':'Customer not found'})
+                    }
+                })
         }
         else if(req.query.type=='address'){
-            Order.find({'customer_address': parameter})
-            .exec((err, data) => {
-                if (err) return res.status(500).json({'Error':err});
-                let responseProducts = [];
-                if(data.length > 0){
-                    data.forEach(element => {
-                        let itemsOrder = {
-                            order_id: element._id,
-                            products: element.products
-                        };
-                        responseProducts.push(itemsOrder);
-                    });
-                    return res.status(200).json({'Orders': responseProducts});
-            } else
-                    return res.status(404).json({'response': 'Address not found'});
-            })
+            Customer.find({'customer_address':parameter})
+                .exec((err, customerData) => {
+                    if(err) return res.status(500).json({'Error':err});
+                    if(customerData != null && customerData.length > 0) {
+                        Order.find({'customer_id': customerData[0]._id})
+                        .exec((err, data) => {
+                            if (err) return res.status(500).json({'Error':err});
+                            let responseProducts = [];
+                            if(data.length > 0){
+                                data.forEach(element => {
+                                    let itemsOrder = {
+                                        order_id: element._id,
+                                        products: element.products
+                                    };
+                                    responseProducts.push(itemsOrder);
+                                });
+                                return res.status(200).json({'Orders': responseProducts});
+                        } else
+                                return res.status(404).json({'response': 'Address not found'});
+                        })
+                    } else {
+                        return res.status(404).json({'Message':'Customer not found'})
+                    }
+
+                })
     }
     
 })
@@ -111,13 +135,10 @@ router.delete('/:id', (req, res) => {
     return res.status(200).json({'Message':'Order deleted!'})
 })
 
-router.put('/:id', (req, res) =>{
+/*router.put('/:id', (req, res) =>{
     const orderId = req.params.id;
     const updateData = {
-        customer_name: req.body.customer_name,
-        customer_address: req.body.customer_address,
         products: req.body.products,
-        currency: req.body.currency
     };
     Order.findById(orderId).exec((err, orderData)=> {
         if(err) return res.status(500).json({'Error':err});
@@ -130,7 +151,7 @@ router.put('/:id', (req, res) =>{
             return res.status(404).json({'Message':'Order not found'});
         }
     })
-})
+})*/
 
 router.get('/item/:item_name', (req, res) => {
     const item_name = req.params.item_name;
@@ -141,7 +162,6 @@ router.get('/item/:item_name', (req, res) => {
             Customer.find({'_id':orderData[0].customer_id}).exec((err, customerData)=>{
                 if(err) return res.status(500).json({'Error':err});
                 customerData.forEach((element)=>{
-                    console.log(element);
                     let objectInfo = {
                         customer_name: element.customer_name,
                         customer_address: element.customer_address,
